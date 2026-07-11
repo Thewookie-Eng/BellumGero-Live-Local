@@ -144,6 +144,15 @@ This will install the latest and symlink all the files to /usr/bin so CMake find
         cd Core3/MMOCoreORB
         make -j$(nproc)
 
+### Optional Discord Integration
+
+Discord chat integration is disabled by default, so development and testing builds do not require additional Discord dependencies.
+
+To enable it, install D++, a third-party C++ library for Discord's programming interface, and ensure its `dpp` package metadata is available to `pkg-config`. Then build with:
+
+        cd Core3/MMOCoreORB
+        make build-ninja-debug CMAKE_ARGS="-DENABLE_DISCORD_INTEGRATION=ON"
+
   * Import sql database into mariadb
 
         sudo apt-get install mariadb-server
