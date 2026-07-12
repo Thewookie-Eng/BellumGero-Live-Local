@@ -788,4 +788,4 @@ function JediTrials:getPointsForCreatureLevel(creatureLevel)
 end
 
 -- Register screenplay to enable onPlayerLoggedIn hook
-registerScreenPlay("JediTrials", true)
+registerScreenPlay("JediTrials", false)

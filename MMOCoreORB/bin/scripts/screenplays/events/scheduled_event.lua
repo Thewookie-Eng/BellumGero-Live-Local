@@ -146,6 +146,12 @@ function ScheduledEvent:getEndTime()
   return self:getStartTime() + 3600  -- 1 hour default
 end
 
+function ScheduledEvent:getDurationSeconds()
+  local dur = self:getEndTime() - self:getStartTime()
+  if dur < 0 then dur = 0 end
+  return dur
+end
+
 function ScheduledEvent:secondsUntilStart()
   local tnow = now()
   local startTime = self:getStartTime()
@@ -544,8 +550,9 @@ function ScheduledEvent:start()
 
   if self.CATCH_UP_IF_MISSED then
     local lastStart = self:lastScheduledStartAtOrBefore(tnow)
-    if lastStart and (tnow - lastStart) < self.DURATION_SECONDS then
-      local remain = self.DURATION_SECONDS - (tnow - lastStart)
+    local duration = self:getDurationSeconds()
+    if lastStart and (tnow - lastStart) < duration then
+      local remain = duration - (tnow - lastStart)
       print("[SCHEDULED] Missed start at " .. os.date("%Y-%m-%d %H:%M:%S", lastStart) .. "; starting now with " .. remain .. " sec remaining.")
       self:beginEvent()
       return
