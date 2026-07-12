@@ -132,8 +132,8 @@ target_link_libraries(core3
 	${DB_LIBRARIES} ${OPENSSL_LIBRARIES}
 	${ZLIB_LIBRARIES} ${CMAKE_DL_LIBS})
 
-# Link DPP library for Discord integration
-if(DPP_FOUND)
+# Link D++ library for Discord integration
+if(ENABLE_DISCORD_INTEGRATION)
 	target_link_libraries(core3 ${DPP_LIBRARIES})
 endif()
 

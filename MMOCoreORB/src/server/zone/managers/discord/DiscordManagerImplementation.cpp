@@ -431,20 +431,24 @@ void DiscordManagerImplementation::handleDiscordMessage(const String& channelId,
 }
 
 void DiscordManagerImplementation::handleDiscordReady() {
+#ifdef WITH_DISCORD_INTEGRATION
     std::lock_guard<std::mutex> lock(discordMutex);
     discordConnected = true;
     info("Discord bot connected and ready!", true);
+#endif
 }
 
 void DiscordManagerImplementation::handleDiscordError(const String& error) {
     this->error("Discord error: " + error);
     
+#ifdef WITH_DISCORD_INTEGRATION
     // If it's a critical error, mark as disconnected
     if (error.indexOf("connection") != -1 || error.indexOf("websocket") != -1) {
         std::lock_guard<std::mutex> lock(discordMutex);
         discordConnected = false;
         // The bot will automatically try to reconnect
     }
+#endif
 }
 
 String DiscordManagerImplementation::formatGameMessage(const String& message, const String& author) {

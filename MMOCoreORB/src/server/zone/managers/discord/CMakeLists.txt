@@ -11,8 +11,8 @@ include_directories(../..)
 # Create discord manager library
 add_library(discordmanager STATIC ${discordmanager_sources} ${discordmanager_headers})
 
-# Link DPP library if available
-if(DPP_FOUND)
+# Link D++ when Discord integration is enabled
+if(ENABLE_DISCORD_INTEGRATION)
 	target_include_directories(discordmanager PRIVATE ${DPP_INCLUDE_DIRS})
 	target_link_libraries(discordmanager ${DPP_LIBRARIES})
 	target_compile_options(discordmanager PRIVATE ${DPP_CFLAGS_OTHER})
