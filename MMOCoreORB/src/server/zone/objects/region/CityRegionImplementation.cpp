@@ -733,7 +733,7 @@ String CityRegionImplementation::getCityRegionName() {
 		return customRegionName;
 
 	if (getRegion(0) != nullptr)
-		getRegion(0)->getAreaName();
+		return getRegion(0)->getAreaName();
 
 	return regionName.getFullPath();
 }
@@ -743,7 +743,7 @@ String CityRegionImplementation::getRegionDisplayedName() {
 		return customRegionName;
 
 	if (getRegion(0) != nullptr)
-		getRegion(0)->getAreaName();
+		return getRegion(0)->getAreaName();
 
 	return StringIdManager::instance()->getStringId(regionName.getFullPath().hashCode()).toString();
 }
