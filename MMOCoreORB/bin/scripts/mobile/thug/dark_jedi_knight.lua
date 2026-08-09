@@ -65,6 +65,12 @@ dark_jedi_knight = Creature:new {
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 250000
+		},
+		{
+			groups = {
+				{group = "ancient_crystal_of_the_sith_group", chance = 10000000}
+			},
+			lootChance = 250000, -- 2.50% total chance
 		}
 },
 

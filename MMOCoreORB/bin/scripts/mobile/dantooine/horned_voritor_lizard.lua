@@ -12,7 +12,7 @@ horned_voritor_lizard = Creature:new {
 	baseHAMmax = 12000,
 	armor = 1,
 	resists = {140,140,5,5,180,180,180,-1,-1},
-	meatType = "meat_carnivore",
+	meatType = "meat_reptilian",
 	meatAmount = 65,
 	hideType = "hide_leathery",
 	hideAmount = 40,
@@ -34,7 +34,7 @@ horned_voritor_lizard = Creature:new {
 			groups = {
 				{group = "voritor_lizard_common", chance = 10000000}
 			},
-			lootChance = 2060000
+			lootChance = 400000
 		}
 	},
 

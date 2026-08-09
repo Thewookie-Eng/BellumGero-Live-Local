@@ -6,6 +6,7 @@
  */
 
 #include "CombatManager.h"
+#include "DpsSessionManager.h"
 #include "CreatureAttackData.h"
 #include "DefenderHitList.h"
 #include "server/zone/objects/scene/variables/DeltaVector.h"
@@ -1402,6 +1403,18 @@ float CombatManager::applyDamageModifiers(CreatureObject* attacker, WeaponObject
 	if (damageDivisor != 0)
 		damage /= damageDivisor;
 
+	// Percent-based outgoing damage bonus (e.g. the Lytus Family Artifact buff,
+	// "private_damage_percent_bonus" = 10 for +10%). Applied here, at damage
+	// calculation time, rather than only when the granting item is used, so a
+	// non-Jedi player who later switches to a lightsaber still gets no bonus
+	// from it -- lightsaber damage is explicitly excluded via isJediWeapon().
+	if (weapon != nullptr && !weapon->isJediWeapon()) {
+		int percentDamageBonus = attacker->getSkillMod("private_damage_percent_bonus");
+
+		if (percentDamageBonus != 0)
+			damage *= (1.0f + (percentDamageBonus / 100.0f));
+	}
+
 	// States Damage Reduction
 	float intimidateMod = attacker->getSkillMod("private_damage_divisor_intimidate");
 	float stunMod = attacker->getSkillMod("private_damage_divisor_stun");
@@ -1494,6 +1507,12 @@ int CombatManager::applyDamage(TangibleObject* attacker, WeaponObject* weapon, C
 	if (defender->isInvulnerable()) {
 		return 0;
 	}
+
+	// Snapshot primary HAM so the DPS meter records damage actually removed,
+	// including spillover while excluding overkill beyond the target's current HAM.
+	int initialPrimaryHam = Math::max(0, defender->getHAM(CreatureAttribute::HEALTH))
+		+ Math::max(0, defender->getHAM(CreatureAttribute::ACTION))
+		+ Math::max(0, defender->getHAM(CreatureAttribute::MIND));
 
 	String xpType;
 	if (data.isForceAttack()) {
@@ -1672,6 +1691,14 @@ int CombatManager::applyDamage(TangibleObject* attacker, WeaponObject* weapon, C
 	int totalDamage = (int)(healthDamage + actionDamage + mindDamage);
 	defender->notifyObservers(ObserverEventType::DAMAGERECEIVED, attacker, totalDamage);
 
+	int finalPrimaryHam = Math::max(0, defender->getHAM(CreatureAttribute::HEALTH))
+		+ Math::max(0, defender->getHAM(CreatureAttribute::ACTION))
+		+ Math::max(0, defender->getHAM(CreatureAttribute::MIND));
+	int appliedDamage = Math::max(0, initialPrimaryHam - finalPrimaryHam);
+
+	if (appliedDamage > 0)
+		DpsSessionManager::instance()->recordDamage(attacker, defender, appliedDamage, DpsSessionManager::DIRECT_DAMAGE);
+
 	if (attacker->isPlayerCreature()) {
 		showHitLocationFlyText(attacker->asCreatureObject(), defender, hitLocation);
 	}
@@ -1740,9 +1767,16 @@ int CombatManager::applyDamage(CreatureObject* attacker, WeaponObject* weapon, T
 		}
 	}
 
+	int initialConditionDamage = defender->getConditionDamage();
+
 	defender->inflictDamage(attacker, 0, damage, true, xpType, true, true);
 
 	defender->notifyObservers(ObserverEventType::DAMAGERECEIVED, attacker, damage);
+
+	int appliedDamage = Math::max(0, defender->getConditionDamage() - initialConditionDamage);
+
+	if (appliedDamage > 0)
+		DpsSessionManager::instance()->recordDamage(attacker, defender, appliedDamage, DpsSessionManager::DIRECT_DAMAGE);
 
 	return damage;
 }

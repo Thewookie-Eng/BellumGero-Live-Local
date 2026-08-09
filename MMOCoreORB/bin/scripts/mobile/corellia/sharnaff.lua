@@ -12,7 +12,7 @@ sharnaff = Creature:new {
 	baseHAMmax = 10600,
 	armor = 0,
 	resists = {15,15,15,120,120,120,120,150,-1},
-	meatType = "meat_carnivore",
+	meatType = "meat_reptilian",
 	meatAmount = 450,
 	hideType = "hide_scaley",
 	hideAmount = 300,
@@ -34,7 +34,7 @@ sharnaff = Creature:new {
 			groups = {
 				{group = "sharnaff_common", chance = 10000000}
 			},
-			lootChance = 1620000
+			lootChance = 300000
 		}
 	},
 

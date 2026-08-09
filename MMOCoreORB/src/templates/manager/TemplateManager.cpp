@@ -775,6 +775,7 @@ void TemplateManager::registerGlobals() {
 
 	luaTemplatesInstance->setGlobalInt("GENETIC_LAB", DraftSchematicObjectTemplate::GENETIC_LAB);
 	luaTemplatesInstance->setGlobalInt("RESOURCE_LAB", DraftSchematicObjectTemplate::RESOURCE_LAB);
+	luaTemplatesInstance->setGlobalInt("BIO_CREATURE_LAB", DraftSchematicObjectTemplate::BIO_CREATURE_LAB);
 
 	luaTemplatesInstance->setGlobalInt("STATIC", EventPerkDeedTemplate::STATIC);
 	luaTemplatesInstance->setGlobalInt("THEATER", EventPerkDeedTemplate::THEATER);
@@ -916,6 +917,7 @@ AppearanceTemplate* TemplateManager::instantiateAppearanceTemplate(IffStream* if
 		case 'DTLA':
 			appTemplate = new DetailAppearanceTemplate();
 			break;
+		case 'SPRT':
 		case 'SMAT':
 			break;
 		case 'PEFT':

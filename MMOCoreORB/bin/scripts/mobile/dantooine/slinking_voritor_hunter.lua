@@ -12,7 +12,7 @@ slinking_voritor_hunter = Creature:new {
 	baseHAMmax = 13000,
 	armor = 1,
 	resists = {145,145,10,10,10,-1,10,10,-1},
-	meatType = "meat_carnivore",
+	meatType = "meat_reptilian",
 	meatAmount = 90,
 	hideType = "hide_leathery",
 	hideAmount = 65,
@@ -34,7 +34,7 @@ slinking_voritor_hunter = Creature:new {
 			groups = {
 				{group = "voritor_lizard_common", chance = 10000000}
 			},
-			lootChance = 2140000
+			lootChance = 450000
 		}
 	},
 

@@ -30,6 +30,44 @@
 #include "server/zone/objects/creature/commands/QueueCommand.h"
 #include "server/zone/objects/intangible/tasks/PetControlDeviceStoreTask.h"
 
+namespace {
+	static constexpr uint32 PET_GROWTH_STAGE_SECONDS = 9600; // 2 hours 40 minutes
+	static constexpr uint32 PET_ACTIVE_GROWTH_MAX_SECONDS = 6 * 60 * 60;
+	static constexpr int PET_ACTIVE_GROWTH_XP_DIVISOR = 25;
+	static constexpr int PET_ACTIVE_GROWTH_MIN_SECONDS = 5;
+	static constexpr int PET_ACTIVE_GROWTH_MAX_PER_KILL_SECONDS = 180;
+
+	bool hasCombatDroidOperatorCertification(CreatureObject* player) {
+		if (player == nullptr)
+			return false;
+
+		return player->hasSkill("crafting_architect_master")
+			|| player->hasSkill("crafting_armorsmith_master")
+			|| player->hasSkill("crafting_chef_master")
+			|| player->hasSkill("crafting_droidengineer_master")
+			|| player->hasSkill("crafting_shipwright_master")
+			|| player->hasSkill("crafting_tailor_master")
+			|| player->hasSkill("crafting_weaponsmith_master")
+			|| player->hasSkill("outdoors_bio_engineer_master")
+			|| player->hasSkill("outdoors_ranger_master")
+			|| player->hasSkill("science_doctor_master")
+			|| player->hasSkill("social_dancer_master")
+			|| player->hasSkill("social_musician_master")
+			|| player->hasSkill("social_imagedesigner_master");
+	}
+
+	bool usesCombatDroidSlot(AiAgent* pet) {
+		if (pet == nullptr || !pet->isDroidObject())
+			return false;
+
+		DroidObject* droid = cast<DroidObject*>(pet);
+
+		// Combat capability always takes priority over a Detonation Module.
+		// A combat-capable bomb droid must still use the dedicated combat slot.
+		return droid != nullptr && droid->isCombatDroid();
+	}
+}
+
 void PetControlDeviceImplementation::callObject(CreatureObject* player, bool initialCall) {
 	if (player == nullptr) {
 		return;
@@ -116,14 +154,16 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 
 	bool isBombDroid = false;
 
-	// Bomb Droid bool only can be true on initial call
+	// Only a pure bomb droid receives bomb-droid call exemptions. A droid that
+	// also has combat capability remains a combat droid for all call checks.
 	if (pet->isDroid()) {
 		auto droid = pet.castTo<DroidObject*>();
 
-		if (droid != nullptr && droid->isBombDroid()) {
-			isBombDroid = true;
-		}
+		if (droid != nullptr)
+			isBombDroid = droid->isBombDroid() && !droid->isCombatDroid();
 	}
+
+	bool isCallingCombatDroid = petType == PetManager::DROIDPET && usesCombatDroidSlot(pet);
 
 	// No Pet active area check
 	if (!isBombDroid) {
@@ -193,6 +233,11 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 
 	if (!growPet(player))
 		return;
+
+	if (petType == PetManager::DROIDPET && isCallingCombatDroid && !hasCombatDroidOperatorCertification(player)) {
+		player->sendSystemMessage("You must master an eligible elite non-combat profession to operate a combat droid.");
+		return;
+	}
 
 	if (petType == PetManager::CREATUREPET && !isValidPet(pet)) {
 		ManagedReference<SuiMessageBox*> box = new SuiMessageBox(player,SuiWindowType::PET_FIX_DIALOG);
@@ -327,8 +372,14 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 					return;
 				}
 			} else if (object->isDroidObject() && petType == PetManager::DROIDPET) {
-				if (++currentlySpawned >= maxPets) {
-					player->sendSystemMessage("@pet/pet_menu:at_max"); // You already have the maximum number of pets of this type that you can call.
+				bool activeDroidIsCombat = usesCombatDroidSlot(object.get());
+
+				if (activeDroidIsCombat == isCallingCombatDroid) {
+					if (isCallingCombatDroid)
+						player->sendSystemMessage("You already have an active combat droid.");
+					else
+						player->sendSystemMessage("You already have an active utility droid.");
+
 					return;
 				}
 			}
@@ -348,7 +399,6 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 		StringIdChatParameter message("pet/pet_menu", "call_pet_delay"); // Calling pet in %DI seconds. Combat will terminate pet call.
 		message.setDI(1);
 		player->sendSystemMessage(message);
-
 		player->addPendingTask("call_pet", callPet, 1 * 1000); // 1 sec delay before starting call
 
 		if (petControlObserver == nullptr) {
@@ -688,8 +738,11 @@ bool PetControlDeviceImplementation::growPet(CreatureObject* player, bool force,
 		return true;
 
 	Time currentTime;
-	uint32 timeDelta = currentTime.getTime() - lastGrowth.getTime();
-	int stagesToGrow = timeDelta / 25920; // 7.2 hours per stage (3 days total)
+	uint32 currentSeconds = currentTime.getTime();
+	uint32 lastGrowthSeconds = lastGrowth.getTime();
+	uint32 timeDelta = currentSeconds >= lastGrowthSeconds ? currentSeconds - lastGrowthSeconds : 0;
+	uint64 totalGrowthProgress = (uint64)timeDelta + (uint64)growthProgressSeconds;
+	int stagesToGrow = totalGrowthProgress / PET_GROWTH_STAGE_SECONDS;
 
 	if (adult)
 		stagesToGrow = 10;
@@ -746,11 +799,72 @@ bool PetControlDeviceImplementation::growPet(CreatureObject* player, bool force,
 	pet->setPetLevel(newLevel);
 
 	growthStage = newStage;
+
+	// Preserve all progress beyond the completed stage instead of discarding it.
+	// Once the pet reaches adulthood, no additional growth progress is needed.
+	if (growthStage >= 10) {
+		growthProgressSeconds = 0;
+	} else {
+		growthProgressSeconds = totalGrowthProgress % PET_GROWTH_STAGE_SECONDS;
+	}
+
+	growthStageReadyNotified = false;
 	lastGrowth.updateToCurrentTime();
 
 	setVitality(getVitality());
 
 	return true;
+}
+
+void PetControlDeviceImplementation::addCombatGrowthProgress(CreatureObject* player, int baseXp) {
+	if (player == nullptr || petType != PetManager::CREATUREPET)
+		return;
+
+	if (growthStage <= 0 || growthStage >= 10)
+		return;
+
+	ManagedReference<TangibleObject*> controlledObject = this->controlledObject.get();
+
+	if (controlledObject == nullptr || !controlledObject->isCreature())
+		return;
+
+	ManagedReference<Creature*> pet = cast<Creature*>(controlledObject.get());
+
+	if (pet == nullptr)
+		return;
+
+	uint32 growthSeconds = 0;
+
+	if (activeGrowthBonusEarnedSeconds < PET_ACTIVE_GROWTH_MAX_SECONDS) {
+		int calculatedGrowth = Math::clamp(
+			PET_ACTIVE_GROWTH_MIN_SECONDS,
+			baseXp / PET_ACTIVE_GROWTH_XP_DIVISOR,
+			PET_ACTIVE_GROWTH_MAX_PER_KILL_SECONDS
+		);
+
+		uint32 remainingLifetimeBonus = PET_ACTIVE_GROWTH_MAX_SECONDS - activeGrowthBonusEarnedSeconds;
+		growthSeconds = Math::min((uint32)calculatedGrowth, remainingLifetimeBonus);
+
+		growthProgressSeconds += growthSeconds;
+		activeGrowthBonusEarnedSeconds += growthSeconds;
+	}
+
+	// Combat is the notification trigger, but the readiness check includes both
+	// natural elapsed time and all carried active-training progress.
+	Time currentTime;
+	uint32 currentSeconds = currentTime.getTime();
+	uint32 lastGrowthSeconds = lastGrowth.getTime();
+	uint32 timeDelta = currentSeconds >= lastGrowthSeconds ? currentSeconds - lastGrowthSeconds : 0;
+	uint64 totalGrowthProgress = (uint64)timeDelta + (uint64)growthProgressSeconds;
+
+	if (totalGrowthProgress >= PET_GROWTH_STAGE_SECONDS && !growthStageReadyNotified) {
+		StringBuffer message;
+		message << pet->getDisplayedName()
+			<< " has accumulated enough growth progress to advance to its next stage. Store and recall the pet to complete its growth.";
+
+		player->sendSystemMessage(message.toString());
+		growthStageReadyNotified = true;
+	}
 }
 
 void PetControlDeviceImplementation::arrestGrowth() {
@@ -803,6 +917,8 @@ void PetControlDeviceImplementation::arrestGrowth() {
 	setVitality(getVitality());
 
 	growthStage = 10;
+	growthProgressSeconds = 0;
+	growthStageReadyNotified = false;
 	lastGrowth.updateToCurrentTime();
 }
 

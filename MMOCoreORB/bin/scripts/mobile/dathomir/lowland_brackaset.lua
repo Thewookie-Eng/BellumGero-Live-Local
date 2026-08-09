@@ -14,7 +14,7 @@ lowland_brackaset = Creature:new {
 	resists = {0,0,0,0,0,0,0,0,-1},
 	meatType = "meat_wild",
 	meatAmount = 75,
-	hideType = "hide_leathery",
+	hideType = "hide_wooly",
 	hideAmount = 65,
 	boneType = "bone_mammal",
 	boneAmount = 60,
@@ -36,7 +36,7 @@ lowland_brackaset = Creature:new {
 			groups = {
 				{group = "brackaset_common", chance = 10000000}
 			},
-			lootChance = 1200000
+			lootChance = 150000
 		}
 	},
 

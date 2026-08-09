@@ -12,7 +12,7 @@ grassland_voritor_tracker = Creature:new {
 	baseHAMmax = 10700,
 	armor = 0,
 	resists = {165,165,30,30,30,30,-1,30,-1},
-	meatType = "meat_carnivore",
+	meatType = "meat_reptilian",
 	meatAmount = 45,
 	hideType = "hide_leathery",
 	hideAmount = 35,
@@ -34,7 +34,7 @@ grassland_voritor_tracker = Creature:new {
 			groups = {
 				{group = "voritor_lizard_common", chance = 10000000}
 			},
-			lootChance = 1900000
+			lootChance = 350000
 		}
 	},
 

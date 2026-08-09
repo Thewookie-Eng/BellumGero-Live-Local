@@ -12,7 +12,7 @@ sharnaff_reckless_ravager = Creature:new {
 	baseHAMmax = 10800,
 	armor = 0,
 	resists = {115,115,20,120,120,120,120,120,-1},
-	meatType = "meat_carnivore",
+	meatType = "meat_reptilian",
 	meatAmount = 450,
 	hideType = "hide_scaley",
 	hideAmount = 300,
@@ -34,7 +34,7 @@ sharnaff_reckless_ravager = Creature:new {
 			groups = {
 				{group = "sharnaff_common", chance = 10000000}
 			},
-			lootChance = 1680000
+			lootChance = 350000
 		}
 	},
 

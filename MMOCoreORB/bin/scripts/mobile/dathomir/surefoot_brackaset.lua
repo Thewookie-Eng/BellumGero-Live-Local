@@ -14,7 +14,7 @@ surefoot_brackaset = Creature:new {
 	resists = {160,155,160,30,30,-1,-1,180,-1},
 	meatType = "meat_wild",
 	meatAmount = 100,
-	hideType = "hide_leathery",
+	hideType = "hide_wooly",
 	hideAmount = 91,
 	boneType = "bone_mammal",
 	boneAmount = 81,
@@ -34,7 +34,7 @@ surefoot_brackaset = Creature:new {
 	        groups = {
 				{group = "brackaset_common", chance = 10000000}
 			},
-			lootChance = 1920000
+			lootChance = 400000
 		}
 	},
 
