@@ -909,7 +909,7 @@ function RangersPath:destroyEncounterAreas(pPlayer)
 	if (areaId ~= nil and areaId ~= 0) then
 		deleteData(areaId .. ":RangersPath:ownerID")
 		deleteData(areaId .. ":RangersPath:stage")
-		deleteData(areaId .. ":RangersPath:type")
+		deleteStringData(areaId .. ":RangersPath:type")
 		deleteData(areaId .. ":RangersPath:step")
 		self:destroyActiveAreaById(areaId)
 	end
@@ -917,7 +917,7 @@ function RangersPath:destroyEncounterAreas(pPlayer)
 	if (auxAreaId ~= nil and auxAreaId ~= 0) then
 		deleteData(auxAreaId .. ":RangersPath:ownerID")
 		deleteData(auxAreaId .. ":RangersPath:stage")
-		deleteData(auxAreaId .. ":RangersPath:type")
+		deleteStringData(auxAreaId .. ":RangersPath:type")
 		deleteData(auxAreaId .. ":RangersPath:step")
 		self:destroyActiveAreaById(auxAreaId)
 	end
@@ -934,7 +934,7 @@ function RangersPath:destroyEncounterObject(pPlayer)
 
 		deleteData(objectId .. ":RangersPath:ownerID")
 		deleteData(objectId .. ":RangersPath:stage")
-		deleteData(objectId .. ":RangersPath:type")
+		deleteStringData(objectId .. ":RangersPath:type")
 
 		if (pObject ~= nil) then
 			pcall(function()
@@ -958,7 +958,7 @@ function RangersPath:despawnEncounterMobiles(pPlayer)
 
 			deleteData(mobId .. ":RangersPath:ownerID")
 			deleteData(mobId .. ":RangersPath:stage")
-			deleteData(mobId .. ":RangersPath:type")
+			deleteStringData(mobId .. ":RangersPath:type")
 			deleteData(mobId .. ":RangersPath:index")
 
 			if (pMobile ~= nil) then
@@ -986,7 +986,7 @@ function RangersPath:despawnSettlers(pPlayer)
 
 			deleteData(mobId .. ":RangersPath:ownerID")
 			deleteData(mobId .. ":RangersPath:stage")
-			deleteData(mobId .. ":RangersPath:type")
+			deleteStringData(mobId .. ":RangersPath:type")
 			deleteData(mobId .. ":RangersPath:required")
 
 			if (pMobile ~= nil) then
@@ -1124,7 +1124,7 @@ function RangersPath:createHuntTriggerArea(pPlayer, stage)
 	local areaId = SceneObject(pArea):getObjectID()
 	writeData(areaId .. ":RangersPath:ownerID", self:getPlayerId(pPlayer))
 	writeData(areaId .. ":RangersPath:stage", stage)
-	writeData(areaId .. ":RangersPath:type", "hunt_trigger")
+	writeStringData(areaId .. ":RangersPath:type", "hunt_trigger")
 
 	createObserver(ENTEREDAREA, "RangersPath", "notifyEnteredEncounterArea", pArea)
 
@@ -1225,7 +1225,7 @@ function RangersPath:spawnHuntTarget(pPlayer, stage)
 	SceneObject(pTarget):setCustomObjectName(hunt.targetName)
 	writeData(targetId .. ":RangersPath:ownerID", self:getPlayerId(pPlayer))
 	writeData(targetId .. ":RangersPath:stage", stage)
-	writeData(targetId .. ":RangersPath:type", "hunt_target")
+	writeStringData(targetId .. ":RangersPath:type", "hunt_target")
 	writeData(targetId .. ":RangersPath:index", 1)
 	createObserver(OBJECTDESTRUCTION, "RangersPath", "notifyEncounterMobileKilled", pTarget)
 
@@ -1320,7 +1320,7 @@ function RangersPath:spawnStage2CampObject(pPlayer)
 	SceneObject(pObject):setCustomObjectName(camp.crateName)
 	writeData(SceneObject(pObject):getObjectID() .. ":RangersPath:ownerID", self:getPlayerId(pPlayer))
 	writeData(SceneObject(pObject):getObjectID() .. ":RangersPath:stage", 2)
-	writeData(SceneObject(pObject):getObjectID() .. ":RangersPath:type", "stage2_crate")
+	writeStringData(SceneObject(pObject):getObjectID() .. ":RangersPath:type", "stage2_crate")
 	self:setEncounterObjectId(pPlayer, SceneObject(pObject):getObjectID())
 
 	if (self.DEBUG_STAGE2 and pPlayer ~= nil) then
@@ -1346,7 +1346,7 @@ function RangersPath:createStage2CrateArea(pPlayer)
 	local areaId = SceneObject(pArea):getObjectID()
 	writeData(areaId .. ":RangersPath:ownerID", self:getPlayerId(pPlayer))
 	writeData(areaId .. ":RangersPath:stage", 2)
-	writeData(areaId .. ":RangersPath:type", "stage2_crate_area")
+	writeStringData(areaId .. ":RangersPath:type", "stage2_crate_area")
 
 	createObserver(ENTEREDAREA, "RangersPath", "notifyEnteredEncounterArea", pArea)
 
@@ -1368,7 +1368,7 @@ function RangersPath:createStage2CrateArea(pPlayer)
 		local fallbackId = SceneObject(pFallbackArea):getObjectID()
 		writeData(fallbackId .. ":RangersPath:ownerID", self:getPlayerId(pPlayer))
 		writeData(fallbackId .. ":RangersPath:stage", 2)
-		writeData(fallbackId .. ":RangersPath:type", "stage2_camp_area")
+		writeStringData(fallbackId .. ":RangersPath:type", "stage2_camp_area")
 		createObserver(ENTEREDAREA, "RangersPath", "notifyEnteredEncounterArea", pFallbackArea)
 		self:setEncounterAuxAreaId(pPlayer, fallbackId)
 
@@ -1475,7 +1475,7 @@ function RangersPath:spawnStage2Ambush(pPlayer)
 			local mobId = SceneObject(pMobile):getObjectID()
 			writeData(mobId .. ":RangersPath:ownerID", self:getPlayerId(pPlayer))
 			writeData(mobId .. ":RangersPath:stage", 2)
-			writeData(mobId .. ":RangersPath:type", "stage2_ambusher")
+			writeStringData(mobId .. ":RangersPath:type", "stage2_ambusher")
 			writeData(mobId .. ":RangersPath:index", i)
 			createObserver(OBJECTDESTRUCTION, "RangersPath", "notifyEncounterMobileKilled", pMobile)
 			self:setNumber(pPlayer, self:getEncounterMobKey(i), mobId)
@@ -1546,7 +1546,7 @@ function RangersPath:countStage2AmbusherKill(pPlayer, victimId, sourceLabel, val
 	if (not matched and validatedByObserver ~= true) then
 		local ownerId = tonumber(readData(victimId .. ":RangersPath:ownerID")) or 0
 		local stage = tonumber(readData(victimId .. ":RangersPath:stage")) or 0
-		local encounterType = tostring(readData(victimId .. ":RangersPath:type") or "")
+		local encounterType = tostring(readStringData(victimId .. ":RangersPath:type") or "")
 
 		if (ownerId == self:getPlayerId(pPlayer) and stage == 2 and encounterType == "stage2_ambusher") then
 			matched = true
@@ -1673,7 +1673,7 @@ function RangersPath:spawnStage3TrailMarkerObject(pPlayer, point)
 	SceneObject(pObject):setCustomObjectName(point.name)
 	writeData(SceneObject(pObject):getObjectID() .. ":RangersPath:ownerID", self:getPlayerId(pPlayer))
 	writeData(SceneObject(pObject):getObjectID() .. ":RangersPath:stage", 3)
-	writeData(SceneObject(pObject):getObjectID() .. ":RangersPath:type", "stage3_trail_marker")
+	writeStringData(SceneObject(pObject):getObjectID() .. ":RangersPath:type", "stage3_trail_marker")
 	self:setEncounterObjectId(pPlayer, SceneObject(pObject):getObjectID())
 
 	if (self.DEBUG_STAGE3 and pPlayer ~= nil) then
@@ -1713,7 +1713,7 @@ function RangersPath:createStage3TrailArea(pPlayer)
 	local areaId = SceneObject(pArea):getObjectID()
 	writeData(areaId .. ":RangersPath:ownerID", self:getPlayerId(pPlayer))
 	writeData(areaId .. ":RangersPath:stage", 3)
-	writeData(areaId .. ":RangersPath:type", "stage3_trail")
+	writeStringData(areaId .. ":RangersPath:type", "stage3_trail")
 	writeData(areaId .. ":RangersPath:step", step)
 
 	createObserver(ENTEREDAREA, "RangersPath", "notifyEnteredEncounterArea", pArea)
@@ -1814,7 +1814,7 @@ function RangersPath:spawnStage3RemainsObject(pPlayer)
 	SceneObject(pObject):setCustomObjectName(info.remainsName)
 	writeData(SceneObject(pObject):getObjectID() .. ":RangersPath:ownerID", self:getPlayerId(pPlayer))
 	writeData(SceneObject(pObject):getObjectID() .. ":RangersPath:stage", 3)
-	writeData(SceneObject(pObject):getObjectID() .. ":RangersPath:type", "stage3_remains")
+	writeStringData(SceneObject(pObject):getObjectID() .. ":RangersPath:type", "stage3_remains")
 	self:setEncounterObjectId(pPlayer, SceneObject(pObject):getObjectID())
 	return pObject
 end
@@ -1835,7 +1835,7 @@ function RangersPath:createStage3RemainsArea(pPlayer)
 	local areaId = SceneObject(pArea):getObjectID()
 	writeData(areaId .. ":RangersPath:ownerID", self:getPlayerId(pPlayer))
 	writeData(areaId .. ":RangersPath:stage", 3)
-	writeData(areaId .. ":RangersPath:type", "stage3_remains_area")
+	writeStringData(areaId .. ":RangersPath:type", "stage3_remains_area")
 
 	createObserver(ENTEREDAREA, "RangersPath", "notifyEnteredEncounterArea", pArea)
 	self:setEncounterAuxAreaId(pPlayer, areaId)
@@ -1857,7 +1857,7 @@ function RangersPath:spawnStage3Guards(pPlayer)
 			local mobId = SceneObject(pMobile):getObjectID()
 			writeData(mobId .. ":RangersPath:ownerID", self:getPlayerId(pPlayer))
 			writeData(mobId .. ":RangersPath:stage", 3)
-			writeData(mobId .. ":RangersPath:type", "stage3_guard")
+			writeStringData(mobId .. ":RangersPath:type", "stage3_guard")
 			writeData(mobId .. ":RangersPath:index", i)
 			createObserver(OBJECTDESTRUCTION, "RangersPath", "notifyEncounterMobileKilled", pMobile)
 			self:setNumber(pPlayer, self:getEncounterMobKey(i), mobId)
@@ -2083,7 +2083,7 @@ function RangersPath:spawnStage5Settlers(pPlayer)
 
 			writeData(mobId .. ":RangersPath:ownerID", self:getPlayerId(pPlayer))
 			writeData(mobId .. ":RangersPath:stage", 5)
-			writeData(mobId .. ":RangersPath:type", "stage5_settler")
+			writeStringData(mobId .. ":RangersPath:type", "stage5_settler")
 			writeData(mobId .. ":RangersPath:required", settler.required and 1 or 0)
 
 			createObserver(OBJECTDESTRUCTION, "RangersPath", "notifyEncounterMobileKilled", pMobile)
@@ -2113,7 +2113,7 @@ function RangersPath:createStage5DefenseArea(pPlayer)
 	local areaId = SceneObject(pArea):getObjectID()
 	writeData(areaId .. ":RangersPath:ownerID", self:getPlayerId(pPlayer))
 	writeData(areaId .. ":RangersPath:stage", 5)
-	writeData(areaId .. ":RangersPath:type", "stage5_defense_start")
+	writeStringData(areaId .. ":RangersPath:type", "stage5_defense_start")
 
 	createObserver(ENTEREDAREA, "RangersPath", "notifyEnteredEncounterArea", pArea)
 
@@ -2273,7 +2273,7 @@ function RangersPath:spawnStage5Wave(pPlayer, wave)
 
 			writeData(mobId .. ":RangersPath:ownerID", self:getPlayerId(pPlayer))
 			writeData(mobId .. ":RangersPath:stage", 5)
-			writeData(mobId .. ":RangersPath:type", "stage5_attacker")
+			writeStringData(mobId .. ":RangersPath:type", "stage5_attacker")
 			writeData(mobId .. ":RangersPath:index", i)
 
 			createObserver(OBJECTDESTRUCTION, "RangersPath", "notifyEncounterMobileKilled", pMobile)
@@ -2412,7 +2412,7 @@ function RangersPath:notifyEnteredEncounterArea(pArea, pPlayer)
 	local areaId = SceneObject(pArea):getObjectID()
 	local ownerId = tonumber(readData(areaId .. ":RangersPath:ownerID")) or 0
 	local stage = tonumber(readData(areaId .. ":RangersPath:stage")) or 0
-	local encounterType = tostring(readData(areaId .. ":RangersPath:type") or "")
+	local encounterType = tostring(readStringData(areaId .. ":RangersPath:type") or "")
 	local step = tonumber(readData(areaId .. ":RangersPath:step")) or 0
 
 	if (ownerId == 0 or self:getPlayerId(pPlayer) ~= ownerId) then
@@ -2501,12 +2501,12 @@ function RangersPath:notifyEncounterMobileKilled(pVictim, pAttacker)
 	local victimId = SceneObject(pVictim):getObjectID()
 	local ownerId = tonumber(readData(victimId .. ":RangersPath:ownerID")) or 0
 	local stage = tonumber(readData(victimId .. ":RangersPath:stage")) or 0
-	local encounterType = tostring(readData(victimId .. ":RangersPath:type") or "")
+	local encounterType = tostring(readStringData(victimId .. ":RangersPath:type") or "")
 	local wasRequired = tonumber(readData(victimId .. ":RangersPath:required")) or 0
 
 	deleteData(victimId .. ":RangersPath:ownerID")
 	deleteData(victimId .. ":RangersPath:stage")
-	deleteData(victimId .. ":RangersPath:type")
+	deleteStringData(victimId .. ":RangersPath:type")
 	deleteData(victimId .. ":RangersPath:index")
 	deleteData(victimId .. ":RangersPath:required")
 

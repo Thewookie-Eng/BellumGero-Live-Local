@@ -378,7 +378,7 @@ function TieredFRSRebelEvent:spawnTier(tier)
 
         -- Store the OID globally so we can find it later
         writeData("TieredFRSRebelEvent:tier" .. tier .. "_npc_" .. i .. "_oid", tostring(oid))
-        writeData("TieredFRSRebelEvent:tier" .. tier .. "_npc_" .. i .. "_template", spec.template)
+        writeStringData("TieredFRSRebelEvent:tier" .. tier .. "_npc_" .. i .. "_template", spec.template)
 
         -- Store tier information for this mob (for FRS rewards)
         writeData("TieredFRSRebelEvent:mob_" .. oid .. "_tier", tier)
@@ -415,7 +415,7 @@ function TieredFRSRebelEvent:despawnTier(tier)
   for i, spec in ipairs(npcs) do
     local storedOid = readData("TieredFRSRebelEvent:tier" .. tier .. "_npc_" .. i .. "_oid")
 
-    if storedOid and storedOid ~= "" then
+    if storedOid ~= nil and storedOid ~= 0 and storedOid ~= "" then
       local oid = tonumber(storedOid)
       if oid then
         -- Clean up tier tracking for this mob
@@ -442,7 +442,7 @@ function TieredFRSRebelEvent:despawnTier(tier)
 
     -- Clean up stored data immediately
     deleteData("TieredFRSRebelEvent:tier" .. tier .. "_npc_" .. i .. "_oid")
-    deleteData("TieredFRSRebelEvent:tier" .. tier .. "_npc_" .. i .. "_template")
+    deleteStringData("TieredFRSRebelEvent:tier" .. tier .. "_npc_" .. i .. "_template")
   end
 
   print("[TIERED_FRS_REBEL] Despawned " .. despawnedCount .. " NPCs from Tier " .. tier)
@@ -508,8 +508,8 @@ end
 function TieredFRSRebelEvent:scheduleEventRespawn()
   local tnow = now()
   local endTime = self:getEndTime()
-  local eventEnded = (readData(KEY_EVENT_ENDED) == "true")
-  local cutoffReached = (readData("TieredFRSRebelEvent:cutoff_reached") == "1")
+  local eventEnded = (readData(KEY_EVENT_ENDED) == 1)
+  local cutoffReached = (readData("TieredFRSRebelEvent:cutoff_reached") == 1)
 
   if not eventEnded and not cutoffReached and tnow < endTime then
     local delay = self.EVENT_RESPAWN_DELAY * 1000
@@ -520,8 +520,8 @@ end
 function TieredFRSRebelEvent:checkEventRespawns(pCreatureObject, pPlayer)
   local tnow = now()
   local endTime = self:getEndTime()
-  local eventEnded = (readData(KEY_EVENT_ENDED) == "true")
-  local cutoffReached = (readData("TieredFRSRebelEvent:cutoff_reached") == "1")
+  local eventEnded = (readData(KEY_EVENT_ENDED) == 1)
+  local cutoffReached = (readData("TieredFRSRebelEvent:cutoff_reached") == 1)
 
   if eventEnded or cutoffReached or tnow >= endTime then
     print("[TIERED_FRS_REBEL] [RESPAWN] Stopping respawns - event ended or cutoff reached")
@@ -548,7 +548,7 @@ function TieredFRSRebelEvent:checkEventRespawns(pCreatureObject, pPlayer)
     local storedOidStr = readData("TieredFRSRebelEvent:tier" .. currentTier .. "_npc_" .. i .. "_oid")
     local storedOid = tonumber(storedOidStr)
 
-    if storedOid then
+    if storedOid ~= nil and storedOid ~= 0 then
       local obj = getSceneObject(storedOid)
       if not obj then
         -- NPC is dead/gone, respawn it
@@ -656,7 +656,7 @@ end
 function TieredFRSRebelEvent:monitorEvent()
   local tnow = now()
   local activeUntil = tonumber(readData(KEY_ACTIVE_UNTIL)) or 0
-  local eventEnded = (readData(KEY_EVENT_ENDED) == "true")
+  local eventEnded = (readData(KEY_EVENT_ENDED) == 1)
 
   if eventEnded then
     return
@@ -696,7 +696,7 @@ end
 function TieredFRSRebelEvent:attemptCleanup()
   print("[TIERED_FRS_REBEL] [CLEANUP] Attempting to find and remove all event NPCs")
 
-  writeData("TieredFRSRebelEvent:cutoff_reached", "1")
+  writeData("TieredFRSRebelEvent:cutoff_reached", 1)
 
   local destroyedCount = 0
 
@@ -706,7 +706,7 @@ function TieredFRSRebelEvent:attemptCleanup()
     for i, spec in ipairs(npcs) do
       local storedOid = readData("TieredFRSRebelEvent:tier" .. tier .. "_npc_" .. i .. "_oid")
 
-      if storedOid and storedOid ~= "" then
+      if storedOid ~= nil and storedOid ~= 0 and storedOid ~= "" then
         local oid = tonumber(storedOid)
         if oid then
           -- Clean up tier tracking
@@ -733,7 +733,7 @@ end
 function TieredFRSRebelEvent:endEventNow()
   print("[TIERED_FRS_REBEL] [END] Event ending NOW - final cleanup")
 
-  writeData(KEY_EVENT_ENDED, "true")
+  writeData(KEY_EVENT_ENDED, 1)
   self._active = false
 
   self:attemptCleanup()
@@ -749,14 +749,14 @@ function TieredFRSRebelEvent:endEventNow()
     local npcs = self:getNPCsForTier(tier)
     for i, spec in ipairs(npcs) do
       local storedOid = readData("TieredFRSRebelEvent:tier" .. tier .. "_npc_" .. i .. "_oid")
-      if storedOid and storedOid ~= "" then
+      if storedOid ~= nil and storedOid ~= 0 and storedOid ~= "" then
         local oid = tonumber(storedOid)
         if oid then
           deleteData("TieredFRSRebelEvent:mob_" .. oid .. "_tier")
         end
       end
       deleteData("TieredFRSRebelEvent:tier" .. tier .. "_npc_" .. i .. "_oid")
-      deleteData("TieredFRSRebelEvent:tier" .. tier .. "_npc_" .. i .. "_template")
+      deleteStringData("TieredFRSRebelEvent:tier" .. tier .. "_npc_" .. i .. "_template")
     end
   end
 
@@ -855,8 +855,8 @@ function TieredFRSRebelEvent:status()
   local startTime = self:getStartTime()
   local endTime = self:getEndTime()
   local activeUntil = tonumber(readData(KEY_ACTIVE_UNTIL)) or 0
-  local eventEnded = (readData(KEY_EVENT_ENDED) == "true")
-  local cutoffReached = (readData("TieredFRSRebelEvent:cutoff_reached") == "1")
+  local eventEnded = (readData(KEY_EVENT_ENDED) == 1)
+  local cutoffReached = (readData("TieredFRSRebelEvent:cutoff_reached") == 1)
   local currentTier = tonumber(readData(KEY_CURRENT_TIER)) or 0
 
   print("[TIERED_FRS_REBEL] ===== STATUS =====")

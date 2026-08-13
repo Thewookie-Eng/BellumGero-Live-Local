@@ -27,7 +27,7 @@ function SmugglerDeliveryNpcs:spawnReceiver(destination)
 	SceneObject(pNpc):setCustomObjectName(destination.name)
 	AiAgent(pNpc):setConvoTemplate(SmugglerDeliveryQuest.RECEIVER_CONVO_TEMPLATE)
 	AiAgent(pNpc):addObjectFlag(AI_STATIC)
-	writeData(SceneObject(pNpc):getObjectID() .. ":SmugglerDeliveryQuest:receiverKey", destination.key)
+	writeStringData(SceneObject(pNpc):getObjectID() .. ":SmugglerDeliveryQuest:receiverKey", destination.key)
 
 	if (SmugglerDeliveryQuest.soSetVar ~= nil) then
 		SmugglerDeliveryQuest:soSetVar(pNpc, "smugglerReceiverKey", destination.key)
@@ -41,7 +41,7 @@ function SmugglerReceiverConvoHandler:getReceiverKey(pNpc)
 		return ""
 	end
 
-	local receiverKey = tostring(readData(SceneObject(pNpc):getObjectID() .. ":SmugglerDeliveryQuest:receiverKey") or "")
+	local receiverKey = tostring(readStringData(SceneObject(pNpc):getObjectID() .. ":SmugglerDeliveryQuest:receiverKey") or "")
 
 	if (receiverKey ~= "" and receiverKey ~= "0") then
 		return receiverKey

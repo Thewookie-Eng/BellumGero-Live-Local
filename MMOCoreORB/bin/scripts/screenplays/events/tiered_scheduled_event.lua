@@ -294,7 +294,7 @@ function TieredScheduledEvent:spawnTier(tier)
 
         -- Store the OID globally so we can find it later
         writeData("TieredScheduledEvent:tier" .. tier .. "_npc_" .. i .. "_oid", tostring(oid))
-        writeData("TieredScheduledEvent:tier" .. tier .. "_npc_" .. i .. "_template", spec.template)
+        writeStringData("TieredScheduledEvent:tier" .. tier .. "_npc_" .. i .. "_template", spec.template)
       end
     else
       print("[TIERED_EVENT] FAILED to spawn " .. spec.template)
@@ -313,7 +313,7 @@ function TieredScheduledEvent:despawnTier(tier)
   for i, spec in ipairs(npcs) do
     local storedOid = readData("TieredScheduledEvent:tier" .. tier .. "_npc_" .. i .. "_oid")
 
-    if storedOid and storedOid ~= "" then
+    if storedOid ~= nil and storedOid ~= 0 and storedOid ~= "" then
       local oid = tonumber(storedOid)
       if oid then
         local obj = getSceneObject(oid)
@@ -337,7 +337,7 @@ function TieredScheduledEvent:despawnTier(tier)
 
     -- Clean up stored data immediately
     deleteData("TieredScheduledEvent:tier" .. tier .. "_npc_" .. i .. "_oid")
-    deleteData("TieredScheduledEvent:tier" .. tier .. "_npc_" .. i .. "_template")
+    deleteStringData("TieredScheduledEvent:tier" .. tier .. "_npc_" .. i .. "_template")
   end
 
   print("[TIERED_EVENT] Despawned " .. despawnedCount .. " NPCs from Tier " .. tier)
@@ -403,8 +403,8 @@ end
 function TieredScheduledEvent:scheduleEventRespawn()
   local tnow = now()
   local endTime = self:getEndTime()
-  local eventEnded = (readData(KEY_EVENT_ENDED) == "true")
-  local cutoffReached = (readData("TieredScheduledEvent:cutoff_reached") == "1")
+  local eventEnded = (readData(KEY_EVENT_ENDED) == 1)
+  local cutoffReached = (readData("TieredScheduledEvent:cutoff_reached") == 1)
 
   if not eventEnded and not cutoffReached and tnow < endTime then
     local delay = self.EVENT_RESPAWN_DELAY * 1000
@@ -415,8 +415,8 @@ end
 function TieredScheduledEvent:checkEventRespawns(pCreatureObject, pPlayer)
   local tnow = now()
   local endTime = self:getEndTime()
-  local eventEnded = (readData(KEY_EVENT_ENDED) == "true")
-  local cutoffReached = (readData("TieredScheduledEvent:cutoff_reached") == "1")
+  local eventEnded = (readData(KEY_EVENT_ENDED) == 1)
+  local cutoffReached = (readData("TieredScheduledEvent:cutoff_reached") == 1)
 
   if eventEnded or cutoffReached or tnow >= endTime then
     print("[TIERED_EVENT] [RESPAWN] Stopping respawns - event ended or cutoff reached")
@@ -443,7 +443,7 @@ function TieredScheduledEvent:checkEventRespawns(pCreatureObject, pPlayer)
     local storedOidStr = readData("TieredScheduledEvent:tier" .. currentTier .. "_npc_" .. i .. "_oid")
     local storedOid = tonumber(storedOidStr)
 
-    if storedOid then
+    if storedOid ~= nil and storedOid ~= 0 then
       local obj = getSceneObject(storedOid)
       if not obj then
         -- NPC is dead/gone, respawn it
@@ -513,7 +513,7 @@ end
 function TieredScheduledEvent:monitorEvent()
   local tnow = now()
   local activeUntil = tonumber(readData(KEY_ACTIVE_UNTIL)) or 0
-  local eventEnded = (readData(KEY_EVENT_ENDED) == "true")
+  local eventEnded = (readData(KEY_EVENT_ENDED) == 1)
 
   if eventEnded then
     return
@@ -553,7 +553,7 @@ end
 function TieredScheduledEvent:attemptCleanup()
   print("[TIERED_EVENT] [CLEANUP] Attempting to find and remove all event NPCs")
 
-  writeData("TieredScheduledEvent:cutoff_reached", "1")
+  writeData("TieredScheduledEvent:cutoff_reached", 1)
 
   local destroyedCount = 0
 
@@ -563,7 +563,7 @@ function TieredScheduledEvent:attemptCleanup()
     for i, spec in ipairs(npcs) do
       local storedOid = readData("TieredScheduledEvent:tier" .. tier .. "_npc_" .. i .. "_oid")
 
-      if storedOid and storedOid ~= "" then
+      if storedOid ~= nil and storedOid ~= 0 and storedOid ~= "" then
         local oid = tonumber(storedOid)
         if oid then
           local obj = getSceneObject(oid)
@@ -587,7 +587,7 @@ end
 function TieredScheduledEvent:endEventNow()
   print("[TIERED_EVENT] [END] Event ending NOW - final cleanup")
 
-  writeData(KEY_EVENT_ENDED, "true")
+  writeData(KEY_EVENT_ENDED, 1)
   self._active = false
 
   self:attemptCleanup()
@@ -603,7 +603,7 @@ function TieredScheduledEvent:endEventNow()
     local npcs = self:getNPCsForTier(tier)
     for i, spec in ipairs(npcs) do
       deleteData("TieredScheduledEvent:tier" .. tier .. "_npc_" .. i .. "_oid")
-      deleteData("TieredScheduledEvent:tier" .. tier .. "_npc_" .. i .. "_template")
+      deleteStringData("TieredScheduledEvent:tier" .. tier .. "_npc_" .. i .. "_template")
     end
   end
 
@@ -702,8 +702,8 @@ function TieredScheduledEvent:status()
   local startTime = self:getStartTime()
   local endTime = self:getEndTime()
   local activeUntil = tonumber(readData(KEY_ACTIVE_UNTIL)) or 0
-  local eventEnded = (readData(KEY_EVENT_ENDED) == "true")
-  local cutoffReached = (readData("TieredScheduledEvent:cutoff_reached") == "1")
+  local eventEnded = (readData(KEY_EVENT_ENDED) == 1)
+  local cutoffReached = (readData("TieredScheduledEvent:cutoff_reached") == 1)
   local currentTier = tonumber(readData(KEY_CURRENT_TIER)) or 0
 
   print("[TIERED_EVENT] ===== STATUS =====")
