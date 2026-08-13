@@ -321,8 +321,8 @@ function AcklayPrivateInstance:loadRoomState(roomId)
 		return nil
 	end
 
-	local status = readData(self:getRoomDataKey(roomId, "status"))
-	if (status ~= nil and status ~= "" and status ~= 0 and status ~= "0") then
+	local status = readStringData(self:getRoomDataKey(roomId, "status"))
+	if (status ~= nil and status ~= "" and status ~= "0") then
 		room.status = tostring(status)
 	end
 
@@ -333,7 +333,7 @@ function AcklayPrivateInstance:loadRoomState(roomId)
 	room.completeAt = tonumber(readData(self:getRoomDataKey(roomId, "completeAt"))) or room.completeAt or 0
 	room.serial = tonumber(readData(self:getRoomDataKey(roomId, "serial"))) or room.serial or 0
 
-	local failureReason = readData(self:getRoomDataKey(roomId, "failureReason"))
+	local failureReason = readStringData(self:getRoomDataKey(roomId, "failureReason"))
 	if (failureReason ~= nil) then
 		room.failureReason = tostring(failureReason)
 	end
@@ -348,25 +348,25 @@ function AcklayPrivateInstance:saveRoomState(roomId)
 		return
 	end
 
-	writeData(self:getRoomDataKey(roomId, "status"), room.status or "idle")
+	writeStringData(self:getRoomDataKey(roomId, "status"), room.status or "idle")
 	writeData(self:getRoomDataKey(roomId, "ownerId"), room.ownerId or 0)
 	writeData(self:getRoomDataKey(roomId, "acklayId"), room.acklayId or 0)
 	writeData(self:getRoomDataKey(roomId, "startTime"), room.startTime or 0)
 	writeData(self:getRoomDataKey(roomId, "complete"), room.complete and 1 or 0)
 	writeData(self:getRoomDataKey(roomId, "completeAt"), room.completeAt or 0)
 	writeData(self:getRoomDataKey(roomId, "serial"), room.serial or 0)
-	writeData(self:getRoomDataKey(roomId, "failureReason"), room.failureReason or "")
+	writeStringData(self:getRoomDataKey(roomId, "failureReason"), room.failureReason or "")
 end
 
 function AcklayPrivateInstance:clearPersistedRoomState(roomId)
-	deleteData(self:getRoomDataKey(roomId, "status"))
+	deleteStringData(self:getRoomDataKey(roomId, "status"))
 	deleteData(self:getRoomDataKey(roomId, "ownerId"))
 	deleteData(self:getRoomDataKey(roomId, "acklayId"))
 	deleteData(self:getRoomDataKey(roomId, "startTime"))
 	deleteData(self:getRoomDataKey(roomId, "complete"))
 	deleteData(self:getRoomDataKey(roomId, "completeAt"))
 	deleteData(self:getRoomDataKey(roomId, "serial"))
-	deleteData(self:getRoomDataKey(roomId, "failureReason"))
+	deleteStringData(self:getRoomDataKey(roomId, "failureReason"))
 end
 
 function AcklayPrivateInstance:spawnEntryNpc()

@@ -221,7 +221,7 @@ function ScheduledEvent:spawnAll()
         
         -- Store the OID globally so we can find it later
         writeData("ScheduledEvent:npc_" .. i .. "_oid", tostring(oid))
-        writeData("ScheduledEvent:npc_" .. i .. "_template", spec.template)
+        writeStringData("ScheduledEvent:npc_" .. i .. "_template", spec.template)
         print("[SCHEDULED] Stored OID " .. oid .. " for cleanup tracking")
       end
     else
@@ -237,8 +237,8 @@ end
 function ScheduledEvent:scheduleEventRespawn()
   local tnow = now()
   local endTime = self:getEndTime()
-  local eventEnded = (readData(KEY_EVENT_ENDED) == "true")
-  local cutoffReached = (readData("ScheduledEvent:cutoff_reached") == "1")
+  local eventEnded = (readData(KEY_EVENT_ENDED) == 1)
+  local cutoffReached = (readData("ScheduledEvent:cutoff_reached") == 1)
   
   -- Only schedule respawn if event is still active and cutoff not reached
   if not eventEnded and not cutoffReached and tnow < endTime then
@@ -253,8 +253,8 @@ end
 function ScheduledEvent:checkEventRespawns(pCreatureObject, pPlayer)
   local tnow = now()
   local endTime = self:getEndTime()
-  local eventEnded = (readData(KEY_EVENT_ENDED) == "true")
-  local cutoffReached = (readData("ScheduledEvent:cutoff_reached") == "1")
+  local eventEnded = (readData(KEY_EVENT_ENDED) == 1)
+  local cutoffReached = (readData("ScheduledEvent:cutoff_reached") == 1)
   
   print("[SCHEDULED] [RESPAWN] Event respawn check - now=" .. tnow .. ", endTime=" .. endTime)
   
@@ -274,7 +274,7 @@ function ScheduledEvent:checkEventRespawns(pCreatureObject, pPlayer)
     
     print("[SCHEDULED] [RESPAWN] Checking " .. spec.template .. " - stored OID: " .. tostring(storedOid) .. ", spec OID: " .. tostring(spec.oid))
     
-    if storedOid then
+    if storedOid ~= nil and storedOid ~= 0 then
       local obj = getSceneObject(storedOid)
       if not obj then
         -- NPC is dead, respawn it
@@ -411,7 +411,7 @@ end
 function ScheduledEvent:monitorEvent()
   local tnow = now()
   local activeUntil = tonumber(readData(KEY_ACTIVE_UNTIL)) or 0
-  local eventEnded = (readData(KEY_EVENT_ENDED) == "true")
+  local eventEnded = (readData(KEY_EVENT_ENDED) == 1)
   
   print("[SCHEDULED] [MONITOR] now=" .. tnow .. ", activeUntil=" .. activeUntil .. ", ended=" .. tostring(eventEnded))
   
@@ -445,7 +445,7 @@ function ScheduledEvent:attemptCleanup()
   print("[SCHEDULED] [CLEANUP] Attempting to find and remove event NPCs")
   
   -- Set cutoff flag FIRST to prevent respawns during cleanup
-  writeData("ScheduledEvent:cutoff_reached", "1")
+  writeData("ScheduledEvent:cutoff_reached", 1)
   print("[SCHEDULED] [CLEANUP] Set cutoff flag - no more respawning")
   
   -- Try multiple approaches to find and destroy NPCs
@@ -454,9 +454,9 @@ function ScheduledEvent:attemptCleanup()
   -- Method 1: Use stored OIDs from spawn
   for i, spec in ipairs(self.NPCS) do
     local storedOid = readData("ScheduledEvent:npc_" .. i .. "_oid")
-    local template = readData("ScheduledEvent:npc_" .. i .. "_template")
+    local template = readStringData("ScheduledEvent:npc_" .. i .. "_template")
     
-    if storedOid and storedOid ~= "" then
+    if storedOid ~= nil and storedOid ~= 0 and storedOid ~= "" then
       local oid = tonumber(storedOid)
       if oid then
         local obj = getSceneObject(oid)
@@ -503,7 +503,7 @@ function ScheduledEvent:endEventNow()
   print("[SCHEDULED] [END] Event ending NOW - final cleanup")
   
   -- Mark event as definitively ended
-  writeData(KEY_EVENT_ENDED, "true")
+  writeData(KEY_EVENT_ENDED, 1)
   self._active = false
   
   -- Attempt to remove all NPCs
@@ -517,7 +517,7 @@ function ScheduledEvent:endEventNow()
   -- Clean up NPC tracking data
   for i, spec in ipairs(self.NPCS) do
     deleteData("ScheduledEvent:npc_" .. i .. "_oid")
-    deleteData("ScheduledEvent:npc_" .. i .. "_template")
+    deleteStringData("ScheduledEvent:npc_" .. i .. "_template")
   end
   
   local endTime = self:getEndTime()
@@ -633,8 +633,8 @@ function ScheduledEvent:status()
   local startTime = self:getStartTime()
   local endTime = self:getEndTime()
   local activeUntil = tonumber(readData(KEY_ACTIVE_UNTIL)) or 0
-  local eventEnded = (readData(KEY_EVENT_ENDED) == "true")
-  local cutoffReached = (readData("ScheduledEvent:cutoff_reached") == "1")
+  local eventEnded = (readData(KEY_EVENT_ENDED) == 1)
+  local cutoffReached = (readData("ScheduledEvent:cutoff_reached") == 1)
   
   print("[SCHEDULED] ===== STATUS =====")
   print("[SCHEDULED] Now: " .. os.date("%Y-%m-%d %H:%M:%S", tnow))
@@ -654,7 +654,7 @@ function ScheduledEvent:status()
   -- Show NPC tracking info
   for i, spec in ipairs(self.NPCS) do
     local storedOid = readData("ScheduledEvent:npc_" .. i .. "_oid")
-    local template = readData("ScheduledEvent:npc_" .. i .. "_template")
+    local template = readStringData("ScheduledEvent:npc_" .. i .. "_template")
     print("[SCHEDULED] NPC " .. i .. ": " .. (template or spec.template) .. " - stored OID: " .. (storedOid or "none"))
   end
 end

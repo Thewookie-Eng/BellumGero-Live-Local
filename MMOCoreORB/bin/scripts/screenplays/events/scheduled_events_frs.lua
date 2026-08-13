@@ -248,7 +248,7 @@ function ScheduledEventFRS:onEventMobDied(pMob, pKiller)
   end)
 
   if not ok then
-    -- Log the error instead of silent failure
+    print("[SCHEDULED_EVENT_FRS] Error in onEventMobDied: " .. tostring(err))
   end
 
   return 0
@@ -273,7 +273,7 @@ function ScheduledEventFRS:spawnAll()
 
         -- Store the OID globally so we can find it later
         writeData("ScheduledEventFRS:npc_" .. i .. "_oid", tostring(oid))
-        writeData("ScheduledEventFRS:npc_" .. i .. "_template", spec.template)
+        writeStringData("ScheduledEventFRS:npc_" .. i .. "_template", spec.template)
 
         -- Ensure creature is properly initialized and alive
         local creature = LuaCreatureObject(pMob)
@@ -302,8 +302,8 @@ end
 function ScheduledEventFRS:scheduleEventRespawn()
   local tnow = now()
   local endTime = self:getEndTime()
-  local eventEnded = (readData(KEY_EVENT_ENDED) == "true")
-  local cutoffReached = (readData("ScheduledEventFRS:cutoff_reached") == "1")
+  local eventEnded = (readData(KEY_EVENT_ENDED) == 1)
+  local cutoffReached = (readData("ScheduledEventFRS:cutoff_reached") == 1)
 
   -- Only schedule respawn if event is still active and cutoff not reached
   if not eventEnded and not cutoffReached and tnow < endTime then
@@ -316,8 +316,8 @@ end
 function ScheduledEventFRS:checkRespawns(pCreatureObject, pPlayer)
   local tnow = now()
   local endTime = self:getEndTime()
-  local eventEnded = (readData(KEY_EVENT_ENDED) == "true")
-  local cutoffReached = (readData("ScheduledEventFRS:cutoff_reached") == "1")
+  local eventEnded = (readData(KEY_EVENT_ENDED) == 1)
+  local cutoffReached = (readData("ScheduledEventFRS:cutoff_reached") == 1)
 
 
   -- STOP respawning if event ended OR cutoff reached
@@ -333,7 +333,7 @@ function ScheduledEventFRS:checkRespawns(pCreatureObject, pPlayer)
     local storedOid = tonumber(storedOidStr)
 
 
-    if storedOid then
+    if storedOid ~= nil and storedOid ~= 0 then
       local obj = getSceneObject(storedOid)
       if not obj then
         -- NPC is dead, respawn it
@@ -529,7 +529,7 @@ end
 function ScheduledEventFRS:monitorEvent(pCreatureObject, pPlayer)
   local tnow = now()
   local activeUntil = tonumber(readData(KEY_ACTIVE_UNTIL)) or 0
-  local eventEnded = (readData(KEY_EVENT_ENDED) == "true")
+  local eventEnded = (readData(KEY_EVENT_ENDED) == 1)
 
   if eventEnded then
     return 0
@@ -537,7 +537,7 @@ function ScheduledEventFRS:monitorEvent(pCreatureObject, pPlayer)
 
   if tnow >= activeUntil then
     -- Set cutoff flag FIRST to prevent respawns during cleanup
-    writeData("ScheduledEventFRS:cutoff_reached", "1")
+    writeData("ScheduledEventFRS:cutoff_reached", 1)
     self:endEventNow()
     return 0
   end
@@ -555,9 +555,9 @@ function ScheduledEventFRS:attemptCleanup()
   -- Method 1: Use stored OIDs from spawn
   for i, spec in ipairs(self.NPCS) do
     local storedOid = readData("ScheduledEventFRS:npc_" .. i .. "_oid")
-    local template = readData("ScheduledEventFRS:npc_" .. i .. "_template")
+    local template = readStringData("ScheduledEventFRS:npc_" .. i .. "_template")
     
-    if storedOid and storedOid ~= "" then
+    if storedOid ~= nil and storedOid ~= 0 and storedOid ~= "" then
       local oid = tonumber(storedOid)
       if oid then
         local obj = getSceneObject(oid)
@@ -596,7 +596,7 @@ end
 function ScheduledEventFRS:endEventNow()
   
   -- Mark event as definitively ended
-  writeData(KEY_EVENT_ENDED, "true")
+  writeData(KEY_EVENT_ENDED, 1)
   self._active = false
   
   -- Attempt to remove all NPCs
@@ -610,7 +610,7 @@ function ScheduledEventFRS:endEventNow()
   -- Clean up NPC tracking data
   for i, spec in ipairs(self.NPCS) do
     deleteData("ScheduledEventFRS:npc_" .. i .. "_oid")
-    deleteData("ScheduledEventFRS:npc_" .. i .. "_template")
+    deleteStringData("ScheduledEventFRS:npc_" .. i .. "_template")
   end
   
   local endTime = self:getEndTime()
@@ -713,8 +713,8 @@ function ScheduledEventFRS:status()
   local startTime = self:getStartTime()
   local endTime = self:getEndTime()
   local activeUntil = tonumber(readData(KEY_ACTIVE_UNTIL)) or 0
-  local eventEnded = (readData(KEY_EVENT_ENDED) == "true")
-  local cutoffReached = (readData("ScheduledEventFRS:cutoff_reached") == "1")
+  local eventEnded = (readData(KEY_EVENT_ENDED) == 1)
+  local cutoffReached = (readData("ScheduledEventFRS:cutoff_reached") == 1)
   
   
   if self:isEventTimeActive() and not eventEnded then
@@ -724,7 +724,7 @@ function ScheduledEventFRS:status()
   -- Show NPC tracking info
   for i, spec in ipairs(self.NPCS) do
     local storedOid = readData("ScheduledEventFRS:npc_" .. i .. "_oid")
-    local template = readData("ScheduledEventFRS:npc_" .. i .. "_template")
+    local template = readStringData("ScheduledEventFRS:npc_" .. i .. "_template")
   end
 end
 

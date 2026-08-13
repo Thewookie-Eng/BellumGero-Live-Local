@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-08-13 — Fix string state stored in numeric shared memory
+
+- **Summary:** `writeData`/`readData` go through `lua_tointeger`, so every string value written with them (`"hunt_trigger"`, `"true"`, `"coronet"`, room status, npc templates) persisted as `0` and never matched on read. Moved string-valued keys to `writeStringData`/`readStringData`/`deleteStringData`, converted the scheduled-event boolean flags to numeric `1`, guarded stored-OID checks against the `0` that `readData` returns for a missing key (previously treated as a live-but-dead NPC and triggered spurious respawns), and logged the `pcall` error that `onEventMobDied` discarded silently.
+- **Files:** `bin/scripts/screenplays/bellum/rangers_path.lua`, `bin/scripts/screenplays/custom/smuggler/smuggler_delivery_npcs.lua`, `bin/scripts/screenplays/dungeon/geonosian_lab/acklay_private_instance.lua`, `bin/scripts/screenplays/events/scheduled_event.lua`, `bin/scripts/screenplays/events/scheduled_events_frs.lua`, `bin/scripts/screenplays/events/tiered_scheduled_event.lua`, `bin/scripts/screenplays/events/tiered_frs_event.lua`
+- **Notes:** Zone restart for Lua. Numeric keys (OIDs, timestamps, counters) intentionally stay on `writeData`. Existing shared-memory entries for the converted keys were unusable anyway, so no migration is needed.
+
 ### 2026-07-23 — Block /teach of Mandalorian quest skills and titles
 
 - **Summary:** Players could `/teach` the Mandalorian Way ranks, titles, and weapon certs (`mando_title_*`, `mando_way_cert_*`, `mando_way_status_cmd`) to other players, bypassing the quest. These skills have no skill/xp/point prerequisites, so `SkillManager::canLearnSkill` always approved them and `getTeachableSkills` did not filter them. Added `mando_` to the teach exclusion list alongside the existing `force_*`/`admin_` guards.
