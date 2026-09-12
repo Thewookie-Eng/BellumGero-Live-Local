@@ -39,11 +39,22 @@ void SchematicList::addRewardedSchematics(SceneObject* player) {
 			for (int i = rewardedSchematics.size() - 1; i >= 0; --i) {
 				DraftSchematic* schem = rewardedSchematics.elementAt(i).getKey();
 
-				if (schem->getDraftSchematicTemplate() != nullptr) {
+				if (schem == nullptr) {
+					Logger::console.error("Dropping dangling rewarded draft schematic entry (object no longer in database) for player object: " + String::valueOf(ghost->getObjectID()));
+					rewardedSchematics.remove(i);
+					continue;
+				}
+
+				if (schem->isValidDraftSchematic()) {
 					schematics.add(schem);
 				} else {
-					rewardedSchematics.drop(schem);
-					schem->destroyObjectFromDatabase(true);
+					// Quarantine instead of destroy: the template may only be unresolved this
+					// boot (rename, lua load failure). Destroying here would permanently delete
+					// an earned reward; guards elsewhere keep the entry inert until it resolves.
+					Logger::console.error("Quarantining rewarded draft schematic with unresolved template: objectID=" + String::valueOf(schem->getObjectID()) +
+							" serverCRC=" + String::valueOf(schem->getServerObjectCRC()) +
+							" clientCRC=" + String::valueOf(schem->getClientObjectCRC()) +
+							" playerObject=" + String::valueOf(ghost->getObjectID()));
 				}
 			}
 
@@ -70,6 +81,16 @@ bool SchematicList::addRewardedSchematic(DraftSchematic* schematic, short type, 
 void SchematicList::removeRewardedSchematic(DraftSchematic* schematic) {
 	if(rewardedSchematics.contains(schematic))
 		rewardedSchematics.drop(schematic);
+}
+
+int SchematicList::getRewardedSchematicUseCount(DraftSchematic* schematic) const {
+	if (schematic == nullptr)
+		return 0;
+	for (int i = 0; i < rewardedSchematics.size(); ++i) {
+		if (rewardedSchematics.elementAt(i).getKey() == schematic)
+			return rewardedSchematics.get(i);
+	}
+	return 0;
 }
 
 bool SchematicList::decreaseSchematicUseCount(DraftSchematic* schematic) {

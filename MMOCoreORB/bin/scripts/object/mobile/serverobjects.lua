@@ -43,6 +43,7 @@
 
 
 --Children folder includes
+includeFile("mobile/bellum/serverobjects.lua")
 includeFile("mobile/naboo_npc/serverobjects.lua")
 includeFile("mobile/skeleton/serverobjects.lua")
 includeFile("mobile/tatooine_npc/serverobjects.lua")
@@ -2659,3 +2660,6 @@ includeFile("mobile/zabrak_female.lua")
 includeFile("mobile/zabrak_male.lua")
 includeFile("mobile/zucca_boar.lua")
 includeFile("mobile/zucca_boar_hue.lua")
+includeFile("mobile/battle_droid_crafted_foundry.lua")
+includeFile("mobile/super_battle_droid_crafted_foundry.lua")
+includeFile("mobile/droideka_crafted_foundry.lua")

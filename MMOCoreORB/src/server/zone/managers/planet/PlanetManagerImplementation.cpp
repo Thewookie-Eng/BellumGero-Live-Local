@@ -22,6 +22,7 @@
 #include "server/zone/managers/stringid/StringIdManager.h"
 
 #include "server/zone/objects/creature/CreatureObject.h"
+#include "server/zone/objects/creature/ai/AiAgent.h"
 #include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/packets/player/PlanetTravelPointListResponse.h"
 #include "server/zone/objects/area/BadgeActiveArea.h"
@@ -252,6 +253,52 @@ void PlanetManagerImplementation::loadPlanetObjects(LuaObject* luaObject) {
 		lua_rawgeti(L, -1, i);
 
 		LuaObject planetObject(L);
+
+		String mobileTemplate = planetObject.getStringField("mobileTemplate");
+		bool testCenterOnly = planetObject.getIntField("testCenterOnly") != 0;
+
+		// Optional TC-only static mobile support. Existing planetObjects that
+		// use templateFile continue through the original object-loading path.
+		if (!mobileTemplate.isEmpty()) {
+			if (testCenterOnly && !ConfigManager::instance()->getCharacterBuilderEnabled()) {
+				planetObject.pop();
+				continue;
+			}
+
+			float x = planetObject.getFloatField("x");
+			float y = planetObject.getFloatField("y");
+			float z = planetObject.getFloatField("z");
+			float headingDegrees = planetObject.getFloatField("heading");
+			float headingRadians = headingDegrees * 0.01745329251994329577f;
+			uint64 parentID = planetObject.getLongField("parent");
+
+			CreatureObject* creature = zone->getCreatureManager()->spawnCreature(
+				mobileTemplate.hashCode(),
+				0,
+				x,
+				z,
+				y,
+				parentID,
+				false,
+				headingRadians
+			);
+
+			if (creature != nullptr) {
+				Locker creatureLocker(creature);
+
+				// Rebuild the AI tree after the selected mobile profile has
+				// loaded so STATIONARY + NOAIAGGRO is applied to dummies.
+				if (creature->isAiAgent()) {
+					AiAgent* agent = creature->asAiAgent();
+
+					if (agent != nullptr)
+						agent->setAITemplate();
+				}
+			}
+
+			planetObject.pop();
+			continue;
+		}
 
 		String templateFile = planetObject.getStringField("templateFile");
 
@@ -546,14 +593,53 @@ Reference<SceneObject*> PlanetManagerImplementation::loadSnapshotObject(WorldSna
 	/*if (ConfigManager::instance()->isProgressMonitorActivated())
 		printf("\r\tLoading snapshot objects: [%d] / [?]\t", totalObjects);*/
 
-	//Object already exists, exit.
-	if (object != nullptr)
+	// Stock snapshot loading keeps its existing-object behavior. Published World
+	// Builder structures use a reserved stable-OID band and may already have
+	// been deserialized from clientobjects without a runtime Zone association.
+	const bool isWorldBuilderObject = objectID >= 0x60000000ULL && objectID <= 0x6FFFFFFFULL;
+	if (object != nullptr && !isWorldBuilderObject)
 		return nullptr;
 
 	Reference<SceneObject*> parentObject = zoneServer->getObject(node->getParentID());
+	Vector3 position = node->getPosition();
+
+	if (object != nullptr) {
+		Locker locker(object);
+
+		object->initializePosition(position.getX(), position.getZ(), position.getY());
+		object->setDirection(node->getDirection());
+
+		if (parentObject != nullptr && parentObject->isBuildingObject() && object->isCellObject()) {
+			CellObject* cell = cast<CellObject*>(object.get());
+			BuildingObject* building = cast<BuildingObject*>(parentObject.get());
+
+			Locker clocker(building, object);
+			building->addCell(cell, node->getCellID());
+		}
+
+		if (parentObject != nullptr) {
+			ManagedReference<SceneObject*> currentParent = object->getParent().get();
+			if (object->getZone() == nullptr || currentParent == nullptr || currentParent->getObjectID() != parentObject->getObjectID() ||
+				!parentObject->hasObjectInContainer(objectID))
+				parentObject->transferObject(object, -1);
+		} else if (node->getParentID() != 0) {
+			error("parent id " + String::valueOf(node->getParentID()));
+		} else if (object->getZone() == nullptr) {
+			zone->transferObject(object, -1, true);
+			info(true) << "Recovered World Builder snapshot object " << objectID << " into zone " << zone->getZoneName();
+		}
+
+		for (int i = 0; i < node->getNodeCount(); ++i) {
+			WorldSnapshotNode* childNode = node->getNode(i);
+
+			if (childNode != nullptr)
+				loadSnapshotObject(childNode, wsiff, totalObjects);
+		}
+
+		return nullptr;
+	}
 
 	String serverTemplate = templateName.replaceFirst("shared_", "");
-	Vector3 position = node->getPosition();
 
 	object = zoneServer->createClientObject(serverTemplate.hashCode(), objectID);
 
