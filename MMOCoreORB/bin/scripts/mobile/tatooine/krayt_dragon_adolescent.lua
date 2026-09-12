@@ -55,6 +55,8 @@ krayt_dragon_adolescent = Creature:new {
 			{group = "clothing_attachments", chance = 1000000},          -- 10.00% of group, 2.00% total
 			{group = "weapon_component_advanced", chance = 1000000},     -- 10.00% of group, 2.00% total
 		},
+		lootChance = 2000000, -- 20.00% total chance
+	},
 		{
 			groups = {
 				{group = "krayt_pearls", chance = 10000000},                 -- 100.00% of group, 5.00% total
