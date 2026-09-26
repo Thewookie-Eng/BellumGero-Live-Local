@@ -51,6 +51,9 @@ static const int RADIAL_ARCHITECT_RETROFIT = 242;
 // BG: New action ID for Create Mannequin (deed dispenser)
 static const int RADIAL_CREATE_MANNEQUIN = 243;
 
+// BG: Owner-only management for the distinct, persisted COOWNER list.
+static const int RADIAL_MANAGE_COOWNERS = 244;
+
 void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* creature) const {
 	if (sceneObject == nullptr || menuResponse == nullptr || creature == nullptr)
 		return;
@@ -127,8 +130,13 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 
 	// Player / non-civic structures
 	if (structureObject->isOnAdminList(creature)) {
+		const bool isActualOwner = structureObject->getOwnerObjectID() == creature->getObjectID();
+		const bool canUseOwnerActions = isActualOwner || ghost->isStaff();
+		const bool canRename = structureObject->hasCoOwnerPermission(creature);
+
 		menuResponse->addRadialMenuItem(RADIAL_ROOT_MANAGEMENT, 3, "@player_structure:management"); // Structure Management
-		menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 128, 3, "@player_structure:permission_destroy"); // Destroy Structure
+		if (canUseOwnerActions)
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 128, 3, "@player_structure:permission_destroy"); // Destroy Structure
 		menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 124, 3, "@player_structure:management_status");  // Status
 		menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 129, 3, "@player_structure:management_pay");     // Pay Maintenance
 
@@ -137,7 +145,8 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 70, 3, "@player_structure:take_maintenance"); // Withdraw Maintenance
 		}
 
-		menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 50, 3, "@player_structure:management_name_structure"); // Name Structure
+		if (canRename)
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 50, 3, "@player_structure:management_name_structure"); // Name Structure
 
 		// Droid assignment option if user has a droid control device
 		ManagedReference<SceneObject*> datapad = creature->getSlottedObject("datapad");
@@ -191,8 +200,12 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 			BuildingObject* building = cast<BuildingObject*>(structureObject.get());
 			if (building != nullptr && ghost != nullptr) {
 				if (ghost->isOwnedStructure(structureObject)) {
-					// Only show option if no vendors AND no mannequins inside
-					if (!HousePackupManager::instance()->hasVendorsInside(building)
+					// Only show option if not already packed/packing, and no vendors/mannequins inside.
+					// This is a convenience -- the authoritative check is the server-side guard in
+					// HousePackupManager::packUpHouse(), which rejects a second pack request even if
+					// a stale menu still shows this option (double click, lag, duplicate packet).
+					if (building->getHousePackState() == 0
+						&& !HousePackupManager::instance()->hasVendorsInside(building)
 						&& !HousePackupManager::instance()->hasMannequinsInside(building)) {
 						menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_PACK_UP_HOUSE, 3, "Pack Up Structure");
 					}
@@ -204,6 +217,8 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 		// Permissions submenu
 		menuResponse->addRadialMenuItem(RADIAL_ROOT_PERMISSIONS, 3, "@player_structure:permissions"); // Structure Permissions
 		menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_PERMISSIONS, 121, 3, "@player_structure:permission_admin");  // Administrator List
+		if (isActualOwner)
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_PERMISSIONS, RADIAL_MANAGE_COOWNERS, 3, "Co-Owner Management");
 
 		if (structureObject->isBuildingObject()) {
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_PERMISSIONS, 119, 3, "@player_structure:permission_enter");  // Entry List
@@ -336,6 +351,7 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 	if (structureObject->isOnAdminList(creature)) {
 		StructureManager* structureManager = StructureManager::instance();
 		Locker structureLocker(structureObject, creature);
+		const bool isActualOwner = structureObject->getOwnerObjectID() == creature->getObjectID();
 
 		switch (selectedID) {
 			case 201:
@@ -356,8 +372,15 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 			case 122:
 				structureObject->sendPermissionListTo(creature, "VENDOR");
 				break;
+			case RADIAL_MANAGE_COOWNERS:
+				if (isActualOwner)
+					structureObject->sendPermissionListTo(creature, "COOWNER");
+				else
+					creature->sendSystemMessage("Only the structure owner may manage Co-Owners.");
+				break;
 			case 128:
-				creature->executeObjectControllerAction(0x18FC1726, structureObject->getObjectID(), ""); // destroyStructure
+				if (isActualOwner || ghost->isStaff())
+					creature->executeObjectControllerAction(0x18FC1726, structureObject->getObjectID(), ""); // destroyStructure
 				break;
 			case 129:
 				creature->executeObjectControllerAction(0xE7E35B30, structureObject->getObjectID(), ""); // payMaintenance
@@ -398,7 +421,10 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 				}
 				break;
 			case 50:
-				structureManager->promptNameStructure(creature, structureObject, nullptr);
+				if (structureObject->hasCoOwnerPermission(creature))
+					structureManager->promptNameStructure(creature, structureObject, nullptr);
+				else
+					creature->sendSystemMessage("Only the owner or a Co-Owner may rename this structure.");
 				// creature->executeObjectControllerAction(0xC367B461, structureObject->getObjectID(), ""); // nameStructure
 				break;
 			case 69:
@@ -444,6 +470,17 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 						// Check 1: Owner-only validation
 						if (!ghost->isOwnedStructure(structureObject)) {
 							creature->sendSystemMessage("You must be the owner to pack up this structure.");
+							break;
+						}
+
+						// Check 1b: Server-side idempotency guard (defense in depth -- the radial
+						// is hidden once packed/packing, but this guards a stale menu, lag, or a
+						// duplicate/replayed command). packUpHouse() re-checks this authoritatively
+						// under lock regardless.
+						if (building->getHousePackState() != 0) {
+							creature->sendSystemMessage(building->getHousePackState() == 2
+								? "This structure has already been packed up. Use 'Destroy Structure' to reclaim the deed."
+								: "This structure is already being packed up. Please wait.");
 							break;
 						}
 
